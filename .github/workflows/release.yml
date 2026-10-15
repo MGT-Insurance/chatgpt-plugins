@@ -26,9 +26,13 @@ jobs:
         id: plugin
         run: |
           set -euo pipefail
-          version="$(jq -r .version chatgpt/mgt-quoting/plugin.json)"
+          manifest=chatgpt/mgt-quoting/.codex-plugin/plugin.json
+          if [ ! -f "${manifest}" ]; then
+            manifest=chatgpt/mgt-quoting/plugin.json
+          fi
+          version="$(jq -r .version "${manifest}")"
           if [ -z "${version}" ] || [ "${version}" = "null" ]; then
-            echo "::error::chatgpt/mgt-quoting/plugin.json has no version"
+            echo "::error::${manifest} has no version"
             exit 1
           fi
           echo "version=${version}" >> "$GITHUB_OUTPUT"
@@ -43,7 +47,7 @@ jobs:
           set -euo pipefail
           if gh release view "${TAG}" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::${TAG} already exists, so there is nothing to release. Raise the version in chatgpt/mgt-quoting/plugin.json to publish a new ZIP."
+            echo "::notice::${TAG} already exists, so there is nothing to release. Raise the version in chatgpt/mgt-quoting/.codex-plugin/plugin.json to publish a new ZIP."
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
