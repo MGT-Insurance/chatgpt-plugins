@@ -1,0 +1,12 @@
+{
+  "name": "mgt-insurance-chatgpt",
+  "interface": { "displayName": "MGT Insurance" },
+  "plugins": [
+    {
+      "name": "mgt-quoting",
+      "source": { "source": "local", "path": "./chatgpt/mgt-quoting" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

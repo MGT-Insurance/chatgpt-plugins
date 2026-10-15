@@ -1,0 +1,36 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "mgt-quoting",
+  "version": "0.1.0",
+  "description": "Quote MGT commercial insurance products from ChatGPT: check appetite, classify the business, and create and edit draft quotes.",
+  "author": {
+    "name": "MGT Insurance",
+    "url": "https://github.com/MGT-Insurance"
+  },
+  "homepage": "https://github.com/MGT-Insurance/chatgpt-plugins/tree/main/chatgpt/mgt-quoting",
+  "repository": "https://github.com/MGT-Insurance/chatgpt-plugins",
+  "license": "MIT",
+  "keywords": ["insurance", "quoting", "commercial-insurance"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "MGT Quoting",
+        "shortDescription": "Draft MGT insurance quotes",
+        "longDescription": "MGT Quoting lets ChatGPT draft commercial insurance quotes with MGT Insurance. ChatGPT checks whether MGT writes a business, picks the right classification, and creates and edits draft quotes for MGT products such as Business Owner Policy, specialty general liability, specialty property, and farm. ChatGPT drafts and results can be wrong: a licensed person must review every quote, and binding happens in Shadowfax, MGT's agent portal, not in ChatGPT. Available to accounts outside MGT that hold the quote:create access granted by MGT.",
+        "developerName": "MGT Insurance",
+        "category": "Productivity",
+        "logo": "./assets/icon.png",
+        "defaultPrompt": [
+          "Does MGT write a bakery in Austin, Texas?",
+          "Draft a Business Owner Policy quote for a 3-person dental office.",
+          "Classify a mobile dog grooming business for MGT."
+        ],
+        "brandColor": "#0B2A4A",
+        "websiteURL": "https://www.mgtinsurance.com",
+        "privacyPolicyURL": "https://www.mgtinsurance.com/privacy-policy",
+        "termsOfServiceURL": "https://www.mgtinsurance.com/terms-conditions",
+        "supportURL": "https://www.mgtinsurance.com"
+      }
+    }
+  }
+}
