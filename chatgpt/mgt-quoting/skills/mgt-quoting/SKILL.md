@@ -1,11 +1,11 @@
 ---
 name: mgt-quoting
-description: Quote MGT commercial insurance products (BOP, specialty general liability, specialty property, farm) through the MGT quoting MCP tools. Use when the user wants to check appetite, classify a business, or create, edit, or validate a draft quote.
+description: Quote MGT small-business commercial insurance products (BOP, specialty general liability, specialty property, farm) for insurance agents through the MGT quoting MCP tools. Use when an agent wants to check appetite, classify a business, or create, edit, or validate a quote.
 ---
 
 # Quote MGT products
 
-Use the `mgt-quoting` MCP server tools to build draft quotes for MGT commercial products. You draft; a licensed person reviews every quote. Binding happens in Shadowfax, MGT's agent portal, not here. Never tell the user a quote is bound or offer to bind it.
+Use the `mgt-quoting` MCP server tools to build quotes for MGT small-business commercial insurance products. The user is an insurance agent. A licensed person reviews every quote. Binding happens in Shadowfax, MGT's agent portal, not here. Never tell the user a quote is bound or offer to bind it.
 
 ## Tools
 
@@ -15,9 +15,9 @@ Use the `mgt-quoting` MCP server tools to build draft quotes for MGT commercial 
 | `appetite_check` | Check per-product availability (`available`, `moratorium`, `declined`) for a business. |
 | `get_quote_schema_catalog` | List the products live for this user and the common field registry. Use it as a mapping reference, not as validation. |
 | `get_product_create_schema` | Get the exact field paths and valid option values for one product's create payload. |
-| `create_quote` | Create a draft quote. It returns a rate when the data is sufficient, or the list of required fields. |
-| `edit_quote` | Set field values on an existing draft quote and optionally re-rate it. |
-| `validate_quote` | Validate a draft quote without rating it. |
+| `create_quote` | Create a quote. It returns a rate when the data is sufficient, or the list of required fields. |
+| `edit_quote` | Set field values on an existing quote and optionally re-rate it. |
+| `validate_quote` | Validate a quote without rating it. |
 
 ## Steps
 
@@ -38,6 +38,6 @@ If a tool returns `needs_organization`, nothing was created. Show the user the `
 
 - Read the premium and referral status from the tool result. Don't calculate or estimate a premium.
 - If a result says `referred`, explain that underwriting must review the quote.
-- Tell the user the quote is a draft that a licensed person must review in Shadowfax before anyone binds coverage.
+- Tell the user that a licensed person must review the quote in Shadowfax before anyone binds coverage.
 - If a tool returns an error with `retryable: true`, retry once. Otherwise report the error text as returned.
 - Send only the details the quote needs. Don't send unrelated personal data.
