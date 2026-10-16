@@ -10,14 +10,14 @@ This repository publishes MGT Insurance's ChatGPT plugins. Each plugin lives in 
 
 ## The two ZIPs
 
-OpenAI expects a different manifest layout for each way you add a plugin, so each [release](https://github.com/MGT-Insurance/chatgpt-plugins/releases) publishes two ZIPs built from the same `chatgpt/mgt-quoting` folder:
+OpenAI expects a different manifest layout for each way you add a plugin, so each [release](https://github.com/MGT-Insurance/chatgpt-plugins/releases) publishes two ZIPs:
 
-| ZIP | Use it for | Manifests at the ZIP root |
-|---|---|---|
-| `mgt-quoting-upload.zip` | OpenAI's plugin portal | `plugin.json` and `mcp.json` |
-| `mgt-quoting-desktop.zip` | ChatGPT desktop | `.codex-plugin/plugin.json` and `.mcp.json` |
+| ZIP | Use it for | Manifests at the ZIP root | Manifests come from |
+|---|---|---|---|
+| `mgt-quoting-upload.zip` | OpenAI's plugin portal | `plugin.json` and `mcp.json` | `chatgpt/mgt-quoting-upload/` |
+| `mgt-quoting-desktop.zip` | ChatGPT desktop | `.codex-plugin/plugin.json` and `.mcp.json` | `chatgpt/mgt-quoting/` |
 
-Both ZIPs also contain the same `skills/` and `assets/` folders. A workflow in this repository builds the ZIPs and creates a release for each new plugin `version`, so don't edit a ZIP by hand. The build fails if the two manifest sets disagree on the plugin name, version, description, author, display text, MCP server URL, or scopes, so the ZIPs can't drift apart.
+Both ZIPs also contain the same `skills/` and `assets/` folders from `chatgpt/mgt-quoting/`. The portal manifests live in `chatgpt/mgt-quoting-upload/` because a root `plugin.json` or `mcp.json` in the plugin folder stops ChatGPT desktop from registering the MCP server when you install the plugin from a marketplace. A workflow in this repository builds the ZIPs and creates a release for each new plugin `version`, so don't edit a ZIP by hand. The build fails if the two manifest sets disagree on the plugin name, version, description, author, display text, MCP server URL, or scopes, or if the plugin folder contains a root `plugin.json` or `mcp.json`.
 
 ## Upload the plugin to the portal
 
@@ -30,13 +30,15 @@ The upload ZIP signs in with the Auth0 app whose `clientId` is set in `mcp.json`
 
 ## Install the plugin in ChatGPT desktop
 
-The desktop ZIP is for MGT internal testers only for now.
+The desktop plugin is for MGT internal testers only for now. Add this repository as a marketplace, then install the plugin from it:
 
-1. Download the [latest `mgt-quoting-desktop.zip`](https://github.com/MGT-Insurance/chatgpt-plugins/releases/latest/download/mgt-quoting-desktop.zip).
-2. Install the ZIP in ChatGPT desktop.
+1. In ChatGPT desktop, add a plugin marketplace with the source `MGT-Insurance/chatgpt-plugins`.
+2. Install **MGT Quoting** from that marketplace.
 3. Sign in when ChatGPT prompts you.
 
-The desktop ZIP signs in with the MGT external-testers Auth0 app, a public client that has no secret, so you don't enter a secret. The sign-in redirects to the loopback address `http://127.0.0.1:14551/callback`, so keep port 14551 free on your machine during sign-in.
+If you can't add a marketplace, download the [latest `mgt-quoting-desktop.zip`](https://github.com/MGT-Insurance/chatgpt-plugins/releases/latest/download/mgt-quoting-desktop.zip) and install the ZIP in ChatGPT desktop instead.
+
+The desktop plugin signs in with the MGT external-testers Auth0 app, a public client that has no secret, so you don't enter a secret. The sign-in redirects to the loopback address `http://127.0.0.1:14551/callback`, so keep port 14551 free on your machine during sign-in.
 
 ## Important limits
 
