@@ -26,9 +26,9 @@ jobs:
         id: plugin
         run: |
           set -euo pipefail
-          manifest=chatgpt/mgt-quoting/.codex-plugin/plugin.json
+          manifest="chatgpt/mgt-quoting/.codex-plugin/plugin.json"
           if [ ! -f "${manifest}" ]; then
-            manifest=chatgpt/mgt-quoting/plugin.json
+            manifest="chatgpt/mgt-quoting/plugin.json"
           fi
           version="$(jq -r .version "${manifest}")"
           if [ -z "${version}" ] || [ "${version}" = "null" ]; then
@@ -47,14 +47,23 @@ jobs:
           set -euo pipefail
           if gh release view "${TAG}" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::${TAG} already exists, so there is nothing to release. Raise the version in chatgpt/mgt-quoting/.codex-plugin/plugin.json to publish a new ZIP."
+            echo "::notice::${TAG} already exists, so there is nothing to release. Raise the version in both chatgpt/mgt-quoting/.codex-plugin/plugin.json and chatgpt/mgt-quoting/plugin.json to publish new ZIPs."
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build the ZIP
+      - name: Build the ZIPs
         if: ${{ steps.existing.outputs.exists == 'false' }}
-        run: node scripts/build-chatgpt-zip.mjs chatgpt/mgt-quoting mgt-quoting.zip
+        run: |
+          set -euo pipefail
+          node scripts/build-chatgpt-zip.mjs chatgpt/mgt-quoting dist
+          for zip in dist/mgt-quoting-upload.zip dist/mgt-quoting-desktop.zip; do
+            if [ ! -f "${zip}" ]; then
+              echo "::error::The build did not produce ${zip}"
+              exit 1
+            fi
+            unzip -l "${zip}"
+          done
 
       - name: Create the release
         if: ${{ steps.existing.outputs.exists == 'false' }}
@@ -63,8 +72,15 @@ jobs:
           TAG: ${{ steps.plugin.outputs.tag }}
           VERSION: ${{ steps.plugin.outputs.version }}
         run: |
-          gh release create "${TAG}" mgt-quoting.zip \
+          notes="ChatGPT plugin packages for MGT Quoting ${VERSION}.
+
+          mgt-quoting-upload.zip is the package you upload in OpenAI's plugin portal.
+
+          mgt-quoting-desktop.zip is the package internal testers install in ChatGPT desktop."
+          gh release create "${TAG}" \
+            dist/mgt-quoting-upload.zip \
+            dist/mgt-quoting-desktop.zip \
             --target "${GITHUB_SHA}" \
             --title "MGT Quoting ${VERSION}" \
-            --notes "ChatGPT plugin package for MGT Quoting ${VERSION}. Upload mgt-quoting.zip in OpenAI's plugin portal." \
+            --notes "${notes}" \
             --latest
