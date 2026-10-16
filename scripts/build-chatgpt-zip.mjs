@@ -1,13 +1,20 @@
 #!/usr/bin/env node
-// Usage: node scripts/build-chatgpt-zip.mjs <plugin-dir> <output.zip>
+// Usage: node scripts/build-chatgpt-zip.mjs <plugin-dir> <out-dir>
 //
-// Zips the CONTENTS of a ChatGPT plugin folder (for example chatgpt/mgt-quoting) so that
-// .codex-plugin/plugin.json and .mcp.json sit at the ZIP root, the layout OpenAI's plugin portal signs in with.
-// The ZIP is deterministic: files are sorted and carry a fixed timestamp, so the same
-// input produces the same bytes. The release workflow in MGT-Insurance/chatgpt-plugins runs
-// this script, and promote/promote.mjs imports buildChatgptZip to check that a plugin zips.
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+// Builds the two ZIPs that OpenAI expects from one ChatGPT plugin folder (for example chatgpt/mgt-quoting):
+//   <name>-upload.zip   plugin.json + mcp.json + skills/ + assets/    for OpenAI's plugin portal
+//   <name>-desktop.zip  .codex-plugin/plugin.json + .mcp.json + skills/ + assets/    for ChatGPT desktop
+// <name> is the `name` in the folder's root plugin.json.
+//
+// Both ZIPs come from the same folder, so the build first checks that the two manifest pairs
+// agree on name, version, description, author, interface, server URL, and scopes. A mismatch
+// throws before any file is written. The ZIPs are deterministic: files are sorted and carry a
+// fixed timestamp, so the same input produces the same bytes. The release workflow in
+// MGT-Insurance/chatgpt-plugins runs this script, and promote/promote.mjs imports buildChatgptZips
+// to check that a plugin zips.
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, relative, resolve, sep } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { crc32, deflateRawSync } from 'node:zlib';
 
@@ -15,22 +22,99 @@ const DOS_TIME = 0;
 const DOS_DATE = (0 << 9) | (1 << 5) | 1; // 1980-01-01
 const UNIX_FILE_MODE = (0o100644 << 16) >>> 0;
 
+const UPLOAD_MANIFESTS = ['plugin.json', 'mcp.json'];
+const DESKTOP_MANIFESTS = ['.codex-plugin/plugin.json', '.mcp.json'];
+const SHARED_DIRS = ['skills', 'assets'];
+
 const listFiles = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
     entry.isDirectory() ? listFiles(join(dir, entry.name)) : [join(dir, entry.name)],
   );
 
-export function buildChatgptZip(pluginDir, outputZip) {
-  const base = resolve(pluginDir);
-  if (!existsSync(join(base, '.codex-plugin', 'plugin.json'))) {
-    throw new Error(`${base} has no .codex-plugin/plugin.json at its root`);
-  }
-  // listFiles keeps dotfiles and dot-directories (.codex-plugin/, .mcp.json); only Finder metadata is dropped.
-  const entries = listFiles(base)
-    .map((file) => ({ name: relative(base, file).split(sep).join('/'), file }))
-    .filter(({ file }) => statSync(file).isFile() && basename(file) !== '.DS_Store')
-    .sort((a, b) => (a.name < b.name ? -1 : 1));
+const readJson = (base, name) => JSON.parse(readFileSync(join(base, name), 'utf8'));
 
+const show = (value) => JSON.stringify(value);
+
+/** Throws a message that names the drifting field when the upload and desktop manifests disagree. */
+function checkDrift(base) {
+  for (const name of [...UPLOAD_MANIFESTS, ...DESKTOP_MANIFESTS]) {
+    if (!existsSync(join(base, name))) throw new Error(`${base} has no ${name}`);
+  }
+  const uploadPlugin = readJson(base, 'plugin.json');
+  const desktopPlugin = readJson(base, '.codex-plugin/plugin.json');
+  const uploadMcp = readJson(base, 'mcp.json');
+  const desktopMcp = readJson(base, '.mcp.json');
+
+  const problems = [];
+  const compare = (field, upload, desktop, uploadFile, desktopFile) => {
+    if (!isDeepStrictEqual(upload, desktop)) {
+      problems.push(`${field}: ${uploadFile} has ${show(upload)} but ${desktopFile} has ${show(desktop)}`);
+    }
+  };
+
+  for (const field of ['name', 'version', 'description', 'author']) {
+    compare(field, uploadPlugin[field], desktopPlugin[field], 'plugin.json', '.codex-plugin/plugin.json');
+  }
+  // Compare the interface key by key so the message names the drifting field, such as interface.displayName.
+  const uploadInterface = uploadPlugin.extensions?.['com.openai']?.interface ?? {};
+  const desktopInterface = desktopPlugin.interface ?? {};
+  for (const key of new Set([...Object.keys(uploadInterface), ...Object.keys(desktopInterface)])) {
+    compare(
+      `interface.${key}`,
+      uploadInterface[key],
+      desktopInterface[key],
+      'plugin.json extensions["com.openai"].interface',
+      '.codex-plugin/plugin.json interface',
+    );
+  }
+
+  const uploadServers = uploadMcp.mcpServers ?? {};
+  const desktopServers = desktopMcp.mcpServers ?? {};
+  compare(
+    'mcpServers keys',
+    Object.keys(uploadServers).sort(),
+    Object.keys(desktopServers).sort(),
+    'mcp.json',
+    '.mcp.json',
+  );
+  for (const key of Object.keys(uploadServers)) {
+    if (!(key in desktopServers)) continue;
+    const upload = uploadServers[key];
+    const desktop = desktopServers[key];
+    compare(`mcpServers.${key}.url`, upload.url, desktop.url, 'mcp.json', '.mcp.json');
+    compare(
+      `mcpServers.${key} scopes (defaultScopes vs scopes)`,
+      upload.extensions?.['com.openai']?.auth?.defaultScopes,
+      desktop.scopes,
+      'mcp.json',
+      '.mcp.json',
+    );
+  }
+
+  if (problems.length) {
+    throw new Error(
+      `the upload and desktop manifests in ${base} have drifted. Make them match:\n${problems.map((p) => `  ${p}`).join('\n')}`,
+    );
+  }
+  return uploadPlugin.name;
+}
+
+const toEntries = (base, names) => {
+  const entries = [];
+  for (const name of names) entries.push({ name, file: join(base, name) });
+  for (const dir of SHARED_DIRS) {
+    const root = join(base, dir);
+    if (!existsSync(root)) continue;
+    for (const file of listFiles(root)) {
+      if (statSync(file).isFile() && basename(file) !== '.DS_Store') {
+        entries.push({ name: relative(base, file).split(sep).join('/'), file });
+      }
+    }
+  }
+  return entries.sort((a, b) => (a.name < b.name ? -1 : 1));
+};
+
+function writeZip(entries, outputZip) {
   const locals = [];
   const centrals = [];
   let offset = 0;
@@ -81,15 +165,47 @@ export function buildChatgptZip(pluginDir, outputZip) {
   end.writeUInt32LE(offset, 16);
 
   writeFileSync(outputZip, Buffer.concat([...locals, ...centrals, end]));
-  return entries.map(({ name }) => name);
+}
+
+/**
+ * Checks the manifests for drift, then writes `<name>-upload.zip` and `<name>-desktop.zip` into `outDir`.
+ * Returns the entry names of each ZIP and the two ZIP paths.
+ */
+export function buildChatgptZips(pluginDir, outDir) {
+  const base = resolve(pluginDir);
+  const name = checkDrift(base);
+  const out = resolve(outDir);
+  mkdirSync(out, { recursive: true });
+
+  const uploadZip = join(out, `${name}-upload.zip`);
+  const desktopZip = join(out, `${name}-desktop.zip`);
+  // toEntries keeps dotfiles and dot-directories (.codex-plugin/, .mcp.json); only Finder metadata is dropped.
+  const uploadEntries = toEntries(base, UPLOAD_MANIFESTS);
+  const desktopEntries = toEntries(base, DESKTOP_MANIFESTS);
+  writeZip(uploadEntries, uploadZip);
+  writeZip(desktopEntries, desktopZip);
+  return {
+    upload: uploadEntries.map((entry) => entry.name),
+    desktop: desktopEntries.map((entry) => entry.name),
+    uploadZip,
+    desktopZip,
+  };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const [pluginDir, outputZip] = process.argv.slice(2);
-  if (!pluginDir || !outputZip) {
-    console.error('usage: build-chatgpt-zip.mjs <plugin-dir> <output.zip>');
+  const [pluginDir, outDir] = process.argv.slice(2);
+  if (!pluginDir || !outDir) {
+    console.error('usage: build-chatgpt-zip.mjs <plugin-dir> <out-dir>');
     process.exit(1);
   }
-  const names = buildChatgptZip(pluginDir, resolve(outputZip));
-  console.log(`build-chatgpt-zip: wrote ${outputZip} (${names.length} files, .codex-plugin/plugin.json at the root)`);
+  try {
+    const result = buildChatgptZips(pluginDir, outDir);
+    console.log(`build-chatgpt-zip: wrote ${result.uploadZip} (${result.upload.length} files, plugin.json and mcp.json at the root)`);
+    console.log(
+      `build-chatgpt-zip: wrote ${result.desktopZip} (${result.desktop.length} files, .codex-plugin/plugin.json and .mcp.json at the root)`,
+    );
+  } catch (error) {
+    console.error(`build-chatgpt-zip: ${error.message}`);
+    process.exit(1);
+  }
 }

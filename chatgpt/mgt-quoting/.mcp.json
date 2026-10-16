@@ -4,7 +4,9 @@
       "url": "https://mcp.mgtinsurance.ai/api/typescript-tools/mcp",
       "auth": "oauth",
       "oauth": {
-        "client_id": "9WnOC4MCXwK1jDZ5bgop9iW1tOjdLHdN"
+        "client_id": "ZEUCslSe3WibS2uYFWisSJtSemw9Y4tr",
+        "callback_port": 14551,
+        "callback_url": "http://127.0.0.1:14551/callback"
       },
       "scopes": [
         "openid",
