@@ -2,12 +2,12 @@
 // Usage: node scripts/build-chatgpt-zip.mjs <plugin-dir> <output.zip>
 //
 // Zips the CONTENTS of a ChatGPT plugin folder (for example chatgpt/mgt-quoting) so that
-// plugin.json sits at the ZIP root, which is what OpenAI's plugin portal requires.
+// .codex-plugin/plugin.json and .mcp.json sit at the ZIP root, the layout OpenAI's plugin portal signs in with.
 // The ZIP is deterministic: files are sorted and carry a fixed timestamp, so the same
 // input produces the same bytes. The release workflow in MGT-Insurance/chatgpt-plugins runs
 // this script, and promote/promote.mjs imports buildChatgptZip to check that a plugin zips.
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve, sep } from 'node:path';
+import { basename, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crc32, deflateRawSync } from 'node:zlib';
 
@@ -22,12 +22,13 @@ const listFiles = (dir) =>
 
 export function buildChatgptZip(pluginDir, outputZip) {
   const base = resolve(pluginDir);
-  if (!existsSync(join(base, 'plugin.json'))) {
-    throw new Error(`${base} has no plugin.json at its root`);
+  if (!existsSync(join(base, '.codex-plugin', 'plugin.json'))) {
+    throw new Error(`${base} has no .codex-plugin/plugin.json at its root`);
   }
+  // listFiles keeps dotfiles and dot-directories (.codex-plugin/, .mcp.json); only Finder metadata is dropped.
   const entries = listFiles(base)
     .map((file) => ({ name: relative(base, file).split(sep).join('/'), file }))
-    .filter(({ file }) => statSync(file).isFile())
+    .filter(({ file }) => statSync(file).isFile() && basename(file) !== '.DS_Store')
     .sort((a, b) => (a.name < b.name ? -1 : 1));
 
   const locals = [];
@@ -90,5 +91,5 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     process.exit(1);
   }
   const names = buildChatgptZip(pluginDir, resolve(outputZip));
-  console.log(`build-chatgpt-zip: wrote ${outputZip} (${names.length} files, plugin.json at the root)`);
+  console.log(`build-chatgpt-zip: wrote ${outputZip} (${names.length} files, .codex-plugin/plugin.json at the root)`);
 }

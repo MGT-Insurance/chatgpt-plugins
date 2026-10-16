@@ -10,7 +10,7 @@ This repository publishes MGT Insurance's ChatGPT plugins. Each plugin lives in 
 
 ## The ZIP
 
-Each [release](https://github.com/MGT-Insurance/chatgpt-plugins/releases) publishes `mgt-quoting.zip`, the upload package for `chatgpt/mgt-quoting`. It holds the contents of that folder, with `plugin.json` at the ZIP root, which is what OpenAI's plugin portal requires. A workflow in this repository builds the ZIP and creates a release for each new plugin `version`, so don't edit the ZIP by hand.
+Each [release](https://github.com/MGT-Insurance/chatgpt-plugins/releases) publishes `mgt-quoting.zip`, the upload package for `chatgpt/mgt-quoting`. It holds the contents of that folder, with `.codex-plugin/plugin.json` (the manifest) and `.mcp.json` (the MCP server and sign-in settings) at the ZIP root. A workflow in this repository builds the ZIP and creates a release for each new plugin `version`, so don't edit the ZIP by hand.
 
 ## Upload the plugin
 
@@ -18,7 +18,9 @@ Each [release](https://github.com/MGT-Insurance/chatgpt-plugins/releases) publis
 2. In OpenAI's plugin portal, choose **Plugins** > **Upload new or existing plugin**.
 3. Upload the ZIP and follow the portal's checks.
 
-The plugin signs in with MGT's Auth0 app. If the app has a client secret, enter it in the portal and never store it in this repository.
+## Sign-in
+
+The plugin signs in with the MGT Auth0 app whose `client_id` is set in `.mcp.json`. The client secret is not in this repository: enter it in OpenAI's plugin portal when you upload the ZIP.
 
 ## Important limits
 

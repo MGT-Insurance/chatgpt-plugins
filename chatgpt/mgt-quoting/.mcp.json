@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "mgt-quoting": {
+      "url": "https://mcp.mgtinsurance.ai/api/typescript-tools/mcp",
+      "auth": "oauth",
+      "oauth": {
+        "client_id": "9WnOC4MCXwK1jDZ5bgop9iW1tOjdLHdN"
+      },
+      "scopes": [
+        "openid",
+        "email",
+        "profile",
+        "offline_access"
+      ]
+    }
+  }
+}
