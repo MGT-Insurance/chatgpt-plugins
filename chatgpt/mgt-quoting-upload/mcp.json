@@ -3,7 +3,7 @@
   "mcpServers": {
     "mgt-quoting": {
       "type": "streamable-http",
-      "url": "https://mcp.mgtinsurance.ai/api/typescript-tools/mcp",
+      "url": "https://mcp.mgtinsurance.ai/api/external/mcp",
       "extensions": {
         "com.openai": {
           "auth": {
