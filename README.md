@@ -43,5 +43,4 @@ The desktop plugin signs in with the MGT external-testers Auth0 app, a public cl
 ## Important limits
 
 - Results can be wrong.
-- A licensed person reviews every quote.
-- Binding happens in Shadowfax, MGT's agent portal, never in ChatGPT.
+- Binding happens in MGT's portal, never in ChatGPT.

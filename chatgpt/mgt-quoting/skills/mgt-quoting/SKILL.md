@@ -5,7 +5,7 @@ description: Quote MGT small-business commercial insurance products (BOP, specia
 
 # Quote MGT products
 
-Use the MGT Quoting MCP server tools to build quotes for MGT small-business commercial insurance products. The user is an insurance agent. A licensed person reviews every quote. Binding happens in Shadowfax, MGT's agent portal, not here. Never tell the user a quote is bound or offer to bind it.
+Use the MGT Quoting MCP server tools to build quotes for MGT small-business commercial insurance products. The user is an insurance agent. Binding happens in MGT's portal, not here. Never tell the user a quote is bound or offer to bind it.
 
 ## Tools
 
@@ -38,6 +38,6 @@ If a tool returns `needs_organization`, nothing was created. Show the user the `
 
 - Read the premium and referral status from the tool result. Don't calculate or estimate a premium.
 - If a result says `referred`, explain that underwriting must review the quote.
-- Tell the user that a licensed person must review the quote in Shadowfax before anyone binds coverage.
+- Tell the user to open the quote in MGT's portal to review and bind it.
 - If a tool returns an error with `retryable: true`, retry once. Otherwise report the error text as returned.
 - Send only the details the quote needs. Don't send unrelated personal data.
