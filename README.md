@@ -30,7 +30,7 @@ The upload ZIP signs in with the Auth0 app whose `clientId` is set in `mcp.json`
 
 ## Install the plugin in ChatGPT desktop
 
-The desktop plugin is for MGT internal testers only for now. Add this repository as a marketplace, then install the plugin from it:
+Add this repository as a marketplace, then install the plugin from it:
 
 1. In ChatGPT desktop, add a plugin marketplace with the source `MGT-Insurance/chatgpt-plugins`.
 2. Install **MGT Quoting** from that marketplace.
