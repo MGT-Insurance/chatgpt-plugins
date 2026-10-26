@@ -54,6 +54,8 @@ jobs:
 
       - name: Build the ZIPs
         if: ${{ steps.existing.outputs.exists == 'false' }}
+        env:
+          VERSION: ${{ steps.plugin.outputs.version }}
         run: |
           set -euo pipefail
           node scripts/build-chatgpt-zip.mjs chatgpt/mgt-quoting dist
@@ -63,6 +65,13 @@ jobs:
               exit 1
             fi
             unzip -l "${zip}"
+          done
+          for name in mgt-quoting-upload mgt-quoting-desktop; do
+            cp "dist/${name}.zip" "dist/${name}-${VERSION}.zip"
+            if [ ! -f "dist/${name}-${VERSION}.zip" ]; then
+              echo "::error::The versioned copy dist/${name}-${VERSION}.zip was not created"
+              exit 1
+            fi
           done
 
       - name: Create the release
@@ -76,10 +85,14 @@ jobs:
 
           mgt-quoting-upload.zip is the package you upload in OpenAI's plugin portal.
 
-          mgt-quoting-desktop.zip is the package internal testers install in ChatGPT desktop."
+          mgt-quoting-desktop.zip is the package internal testers install in ChatGPT desktop.
+
+          mgt-quoting-upload-${VERSION}.zip and mgt-quoting-desktop-${VERSION}.zip are identical copies of those two files. The fixed-name files keep the latest-release download links working. Upload mgt-quoting-upload-${VERSION}.zip to OpenAI's portal so the version is visible there."
           gh release create "${TAG}" \
             dist/mgt-quoting-upload.zip \
             dist/mgt-quoting-desktop.zip \
+            "dist/mgt-quoting-upload-${VERSION}.zip" \
+            "dist/mgt-quoting-desktop-${VERSION}.zip" \
             --target "${GITHUB_SHA}" \
             --title "MGT Quoting ${VERSION}" \
             --notes "${notes}" \
