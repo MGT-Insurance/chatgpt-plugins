@@ -7,28 +7,30 @@ description: Quote MGT small-business commercial insurance products (BOP, specia
 
 Use the MGT Quoting MCP server tools to build quotes for MGT small-business commercial insurance products. The user is an insurance agent. Binding happens in MGT's portal, not here. Never tell the user a quote is bound or offer to bind it.
 
+## Start with the plan
+
+To quote a risk, call `get_quoting_plan` first, before any other quoting tool, and follow the plan it returns. The tool takes no input.
+
+The plan gives you the tool order and how to read each result: catalog, classification, appetite, product schema, create, edit, validate, then rate. It also sets the rules for confidence labels, values you must never invent, and the final handoff to MGT's portal. If anything below differs from the plan, follow the plan.
+
+You still own the judgment the plan can't make for you:
+
+- Collect the business name, a description of operations, the state, and the effective date. Ask for anything missing. Never guess a value.
+- Choose the product from what the user asked for, never from what appetite allows. If a product is `declined` or in `moratorium`, say so and don't quote a substitute.
+- Report what the tools return.
+
 ## Tools
 
 | Tool | Use it to |
 |---|---|
+| `get_quoting_plan` | Get the step-by-step quoting plan. Call it first. |
+| `get_quote_schema_catalog` | List the products live for this user and the common field registry. |
 | `resolve_business_classification` | Map one fact (NAICS code, business description, MGT BOP class code, or industry group) to its NAICS entries, BOP classes, and industry groups. It does not decide appetite. |
 | `appetite_check` | Check per-product availability (`available`, `moratorium`, `declined`) for a business. |
-| `get_quote_schema_catalog` | List the products live for this user and the common field registry. Use it as a mapping reference, not as validation. |
 | `get_product_create_schema` | Get the exact field paths and valid option values for one product's create payload. |
-| `create_quote` | Create a quote. It returns a rate when the data is sufficient, or the list of required fields. |
-| `edit_quote` | Set field values on an existing quote and optionally re-rate it. |
+| `create_quote` | Create a draft quote. It never rates. |
+| `edit_quote` | Set field values on an existing quote, or rate it once validation passes. |
 | `validate_quote` | Validate a quote without rating it. |
-
-## Steps
-
-1. Collect the business name, a description of operations, the state, and the effective date. Ask for anything missing. Do not guess a value.
-2. Classify the business. If you have an exact NAICS code, pass it as `naics`. Otherwise pass `businessDescription` to `appetite_check` or `resolve_business_classification`. If the code is not specific enough, the tool rejects it and names candidates; ask the user to pick one.
-3. Run `appetite_check`. Report each product's decision as returned. If a product is `declined` or in `moratorium`, say so and don't create a quote for it.
-4. Call `get_quote_schema_catalog` to confirm which products are live for the user.
-5. For each product to quote, call `get_product_create_schema` before you set any value. Use the paths it returns and only the option values it lists. An out-of-options value is rejected and creates nothing.
-6. Call `create_quote` with the information you have. If the result lists required fields, ask the user for them, then call `edit_quote`.
-7. Call `edit_quote` to change fields. Send every `value` as a string, and JSON-encode structured values. To re-rate, set `rate: true`. Fields reported in `skipped` were not applied; tell the user.
-8. Call `validate_quote` when the user wants a check without rating.
 
 ## Multiple agencies
 
