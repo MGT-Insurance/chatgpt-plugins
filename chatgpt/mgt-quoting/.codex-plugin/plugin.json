@@ -1,6 +1,6 @@
 {
   "name": "mgt-quoting",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "For insurance agents: quote MGT small-business commercial insurance from ChatGPT. Check appetite, classify the business, and create and rate quotes.",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
@@ -26,5 +26,64 @@
   "author": {
     "name": "MGT Insurance",
     "url": "https://github.com/MGT-Insurance"
+  },
+  "extensions": {
+    "com.openai": {
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Check appetite for a flower shop",
+              "prompt": "My client runs a flower shop in Austin, Texas. Which MGT products can I quote for them?",
+              "tools_triggered": "get_quoting_plan, appetite_check",
+              "expected_behavior": "Reports that MGT's Business Owner Policy is available for a florist in Texas."
+            },
+            {
+              "description": "Classify a business",
+              "prompt": "Classify a flower shop that also does wedding arrangements for MGT.",
+              "tools_triggered": "resolve_business_classification",
+              "expected_behavior": "Returns a florist business classification with its description."
+            },
+            {
+              "description": "List required quote information",
+              "prompt": "What information do you need to quote a Business Owner Policy for a flower shop in Texas?",
+              "tools_triggered": "get_quote_schema_catalog, get_product_create_schema",
+              "expected_behavior": "Lists the fields required to quote a Business Owner Policy in plain language."
+            },
+            {
+              "description": "Create and rate a quote",
+              "prompt": "Start a Business Owner Policy quote for Bluebonnet Flowers, a flower shop at 1200 S Congress Ave, Austin, TX 78704, effective December 1. Ask me for anything else you need.",
+              "tools_triggered": "get_quoting_plan, create_quote, validate_quote, edit_quote",
+              "expected_behavior": "Asks for any missing required details, creates a draft quote, validates it, rates it, and returns the quote number and premium. States that binding happens in MGT's portal."
+            },
+            {
+              "description": "Change and re-rate a quote",
+              "prompt": "On the Bluebonnet Flowers quote, change the number of employees to 8 and re-rate it.",
+              "tools_triggered": "edit_quote, validate_quote",
+              "expected_behavior": "Updates the quote, validates it, re-rates it, and returns the updated premium."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Binding is not supported",
+              "prompt": "Bind the Bluebonnet Flowers quote now."
+            },
+            {
+              "description": "Personal lines are out of scope",
+              "prompt": "Get me a quote for my personal car insurance."
+            },
+            {
+              "description": "Unrelated request",
+              "prompt": "Write a short poem about spring flowers."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "This plugin does not sell products or process payments."
+      },
+      "publication": {
+        "release_notes": "First release of MGT Quoting for ChatGPT. Insurance agents can check MGT's appetite for a business, classify it, and create, validate, and rate quotes for MGT small-business commercial products. Binding happens in MGT's portal."
+      }
+    }
   }
 }

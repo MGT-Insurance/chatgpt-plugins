@@ -95,6 +95,17 @@ function checkDrift(base, uploadBase) {
     );
   }
 
+  // OpenAI ignores the desktop manifest's extensions when the upload manifest has them, so review and publication must match.
+  for (const key of ['review', 'publication']) {
+    compare(
+      `extensions["com.openai"].${key}`,
+      uploadPlugin.extensions?.['com.openai']?.[key],
+      desktopPlugin.extensions?.['com.openai']?.[key],
+      uploadPluginFile,
+      desktopPluginFile,
+    );
+  }
+
   const uploadServers = uploadMcp.mcpServers ?? {};
   const desktopServers = desktopMcp.mcpServers ?? {};
   compare(
