@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "mgt-quoting",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "For insurance agents: quote MGT small-business commercial insurance from ChatGPT. Check appetite, classify the business, and create and rate quotes.",
   "author": {
     "name": "MGT Insurance",
@@ -11,7 +11,7 @@
     "com.openai": {
       "interface": {
         "displayName": "MGT Quoting",
-        "shortDescription": "Quote MGT small-business insurance",
+        "shortDescription": "Quote MGT business insurance",
         "longDescription": "MGT Quoting lets insurance agents quote small-business commercial insurance with MGT Insurance from ChatGPT. Describe a business, and ChatGPT checks whether MGT writes it, picks the right business classification, and creates, validates, and rates a quote for MGT products such as Business Owner Policy, specialty general liability, specialty property, and farm. The rated quote shows the premium and any referral status MGT returns. Results can be wrong, and binding happens in MGT's portal, not in ChatGPT. Available to accounts that can quote on the MGT platform.",
         "developerName": "MGT Insurance",
         "category": "Business & Operations",
