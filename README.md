@@ -44,3 +44,4 @@ The desktop plugin signs in with the MGT external-testers Auth0 app, a public cl
 
 - Results can be wrong.
 - Binding happens in MGT's portal, never in ChatGPT.
+- All information is reviewed by licensed MGT underwriters.

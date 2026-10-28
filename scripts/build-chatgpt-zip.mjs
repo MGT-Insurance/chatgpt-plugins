@@ -14,7 +14,9 @@
 // from a marketplace, so the build throws if either file exists there.
 //
 // Both ZIPs come from the same sources, so the build checks that the two manifest pairs agree on name, version,
-// description, author, interface, server URL, and scopes. A mismatch throws before any file is written. The ZIPs
+// description, author, interface, server URL, and scopes. A mismatch throws before any file is written. The build
+// also throws, naming the field, its length, and the limit, when the upload manifest breaks OpenAI's listing limits
+// (title and description lengths, defaultPrompt count and length, https URLs, review test cases). The ZIPs
 // are deterministic: files are sorted and carry a fixed timestamp, so the same input produces the same bytes.
 // The release workflow in MGT-Insurance/chatgpt-plugins runs this script, and promote/promote.mjs imports
 // buildChatgptZips to check that a plugin zips.
@@ -137,6 +139,76 @@ function checkDrift(base, uploadBase) {
   return uploadPlugin.name;
 }
 
+// OpenAI's listing limits: https://developers.openai.com/plugins/deploy/submission. Lengths are JS string lengths.
+const TEXT_LIMITS = { displayName: 30, shortDescription: 30, longDescription: 4000, developerName: 80 };
+const MAX_DEFAULT_PROMPTS = 3;
+const MAX_DEFAULT_PROMPT_LENGTH = 128;
+const MAX_URL_LENGTH = 1024;
+const REVIEW_CASES = { positive: 5, negative: 3 };
+const POSITIVE_CASE_FIELDS = ['description', 'prompt', 'tools_triggered', 'expected_behavior'];
+const NEGATIVE_CASE_FIELDS = ['description', 'prompt'];
+
+const isBlank = (value) => typeof value !== 'string' || value.trim() === '';
+
+/**
+ * Throws a message that names each field, its actual length, and the limit when the upload manifest breaks
+ * OpenAI's listing rules. The desktop manifest's interface is guaranteed equal by checkDrift, so only the upload
+ * manifest is checked.
+ */
+function checkListingLimits(uploadBase) {
+  const file = join(uploadBase, 'plugin.json');
+  const openai = readJson(uploadBase, 'plugin.json').extensions?.['com.openai'] ?? {};
+  const listing = openai.interface ?? {};
+  const problems = [];
+
+  for (const [key, max] of Object.entries(TEXT_LIMITS)) {
+    const value = listing[key];
+    if (typeof value === 'string' && value.length > max) {
+      problems.push(`interface.${key} is ${value.length} characters; the limit is ${max}`);
+    }
+  }
+
+  const prompts = listing.defaultPrompt;
+  if (Array.isArray(prompts)) {
+    if (prompts.length > MAX_DEFAULT_PROMPTS) {
+      problems.push(`interface.defaultPrompt has ${prompts.length} entries; the limit is ${MAX_DEFAULT_PROMPTS}`);
+    }
+    prompts.forEach((prompt, index) => {
+      if (typeof prompt === 'string' && prompt.length > MAX_DEFAULT_PROMPT_LENGTH) {
+        problems.push(`interface.defaultPrompt[${index}] is ${prompt.length} characters; the limit is ${MAX_DEFAULT_PROMPT_LENGTH}`);
+      }
+    });
+  }
+
+  for (const [key, value] of Object.entries(listing)) {
+    if (!key.endsWith('URL') || typeof value !== 'string') continue;
+    if (!value.startsWith('https://')) problems.push(`interface.${key} is ${show(value)}; it must start with https://`);
+    if (value.length > MAX_URL_LENGTH) problems.push(`interface.${key} is ${value.length} characters; the limit is ${MAX_URL_LENGTH}`);
+  }
+
+  const cases = openai.review?.test_cases;
+  if (cases) {
+    const required = { positive: POSITIVE_CASE_FIELDS, negative: NEGATIVE_CASE_FIELDS };
+    for (const [kind, count] of Object.entries(REVIEW_CASES)) {
+      const list = Array.isArray(cases[kind]) ? cases[kind] : [];
+      if (list.length !== count) {
+        problems.push(`review.test_cases.${kind} has ${list.length} entries; it must have exactly ${count}`);
+      }
+      list.forEach((testCase, index) => {
+        for (const field of required[kind]) {
+          if (isBlank(testCase?.[field])) problems.push(`review.test_cases.${kind}[${index}].${field} is missing or empty`);
+        }
+      });
+    }
+  }
+
+  if (problems.length) {
+    throw new Error(
+      `${file} breaks OpenAI's listing limits (https://developers.openai.com/plugins/deploy/submission):\n${problems.map((p) => `  ${p}`).join('\n')}`,
+    );
+  }
+}
+
 /** Lists each manifest from `manifestBase`, then every skills/ and assets/ file from `base`. */
 const toEntries = (base, manifestBase, names) => {
   const entries = [];
@@ -216,6 +288,7 @@ export function buildChatgptZips(pluginDir, outDir) {
   const uploadBase = uploadDirFor(base);
   checkLayout(base, uploadBase);
   const name = checkDrift(base, uploadBase);
+  checkListingLimits(uploadBase);
   const out = resolve(outDir);
   mkdirSync(out, { recursive: true });
 
