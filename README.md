@@ -1,4 +1,4 @@
-> **Generated from [MGT-Insurance/agentic-plugins-main](https://github.com/MGT-Insurance/agentic-plugins-main). Don't commit here.** Open pull requests in that repository. The promote workflow overwrites this repository, so a direct commit is lost.
+> **This repository is generated. Don't commit here.** A promote workflow overwrites this repository, so a direct commit is lost.
 
 # MGT Insurance plugins for ChatGPT
 
